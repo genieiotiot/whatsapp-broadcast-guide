@@ -1,0 +1,300 @@
+{
+  "name": "WhatsApp-broadcast-image-template",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://127.0.0.1:3000/api/send-bulk-image-url/",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\n \"chatIds\": {{JSON.stringify($node[\"Set ChatIds\"].json[\"chatIds\"])}},\n \"imgURL\": \"https://assets.stickpng.com/images/5842a8fba6515b1e0ad75b03.png\",\n \"imgType\": \"image/png\",\n \"caption\": \"Test\"\n}",
+        "queryParametersJson": "{ \"token\":\"VERIFICATION_TOKEN\"}"
+      },
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1310,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "lookup",
+        "sheetId": "SHEET_ID",
+        "range": "Broadcast-Image!A:F",
+        "lookupColumn": "Status",
+        "lookupValue": "ToSend",
+        "options": {}
+      },
+      "name": "Lookup Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        420,
+        590
+      ],
+      "credentials": {
+        "googleApi": "Google Service"
+      }
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        250,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "chatId",
+              "value": "={{$node[\"Get List\"].json[\"Phone\"]}}@c.us"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        810,
+        590
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "SHEET_ID",
+        "range": "Broadcast-Image!A:F",
+        "key": "=id",
+        "options": {}
+      },
+      "name": "Google Sheets1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        1690,
+        400
+      ],
+      "credentials": {
+        "googleApi": "Google Service"
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "Status",
+              "value": "Success"
+            },
+            {
+              "name": "id",
+              "value": "={{$node[\"Lookup Sheets\"].json[\"id\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        400
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "SHEET_ID",
+        "range": "Broadcast-Image!A:F",
+        "options": {}
+      },
+      "name": "Google Sheets2",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        880,
+        280
+      ],
+      "credentials": {
+        "googleApi": "Google Service"
+      }
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "Status",
+              "value": "=Processing"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set2",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        670,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "sheetId": "SHEET_ID",
+        "range": "={{$node[\"Lookup Sheets\"].json[\"To List\"]}}!A:F",
+        "options": {}
+      },
+      "name": "Get List",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        640,
+        590
+      ],
+      "credentials": {
+        "googleApi": "Google Service"
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const chatIds = []\n\nfor (const item of items) {\n  chatIds.push(item.json.chatId)  \n}\n\nreturn [\n  {\n    json: {\n      chatIds\n    }\n  }\n]\n\n\n"
+      },
+      "name": "Set ChatIds",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1010,
+        590
+      ]
+    }
+  ],
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Set1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Sheets": {
+      "main": [
+        [
+          {
+            "node": "Get List",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Set2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "Lookup Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "Set ChatIds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set1": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set2": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get List": {
+      "main": [
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set ChatIds": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "12"
+}

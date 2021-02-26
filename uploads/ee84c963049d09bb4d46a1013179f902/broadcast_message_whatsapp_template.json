@@ -1,0 +1,466 @@
+{
+  "name": "broadcast-message-whatsapp-template",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://127.0.0.1:3000/api/send-text-message/",
+        "options": {},
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "message",
+              "value": "={{$node[\"SplitInBatches\"].json[\"customizedMessage\"]}}"
+            },
+            {
+              "name": "chatId",
+              "value": "={{$node[\"SplitInBatches\"].json[\"mobile\"]}}@c.us"
+            }
+          ]
+        },
+        "queryParametersUi": {
+          "parameter": [
+            {
+              "name": "token",
+              "value": "VERIFICATION_TOKEN"
+            }
+          ]
+        }
+      },
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1470,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "lookup",
+        "sheetId": "SHEET_ID",
+        "range": "Broadcast!A:F",
+        "lookupColumn": "Status",
+        "lookupValue": "ToSend",
+        "options": {}
+      },
+      "name": "Lookup Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        360,
+        570
+      ],
+      "credentials": {
+        "googleApi": "Google Service"
+      }
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        130,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "lookup",
+        "sheetId": "SHEET_ID",
+        "range": "Broadcast!A:F",
+        "lookupColumn": "Status",
+        "lookupValue": "ToSend",
+        "options": {}
+      },
+      "name": "Lookup Sheets1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        740,
+        570
+      ],
+      "credentials": {
+        "googleApi": "Google Service"
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "mobile",
+              "value": "={{$node[\"Get List\"].json[\"Phone\"]}}"
+            },
+            {
+              "name": "Name",
+              "value": "={{$node[\"Get List\"].json[\"Name\"]}}"
+            },
+            {
+              "name": "message",
+              "value": "={{$node[\"Lookup Sheets1\"].json[\"Broadcast Message\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        960,
+        570
+      ]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "Status",
+              "value": "=Success ({{($node[\"SplitInBatches\"].context[\"currentRunIndex\"]+1)*2}})"
+            },
+            {
+              "name": "id",
+              "value": "={{$node[\"Lookup Sheets\"].json[\"id\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        1730,
+        380
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "Status",
+              "value": "=Processing"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set2",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        910,
+        310
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {}
+      },
+      "name": "SplitInBatches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [
+        1310,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const waitTimeSeconds = 10;\n\nreturn new Promise((resolve) => {\n  setTimeout(() => {\n    resolve(items);\n  }, waitTimeSeconds * 1000);\n});\n\n"
+      },
+      "name": "Wait",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1530,
+        820
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "SHEET_ID",
+        "range": "Log!A:F",
+        "options": {}
+      },
+      "name": "Add Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        1850,
+        170
+      ],
+      "credentials": {
+        "googleApi": "Google Service"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "SHEET_ID",
+        "range": "Broadcast!A:F",
+        "key": "=id",
+        "options": {}
+      },
+      "name": "Update Status - Success",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        1950,
+        460
+      ],
+      "executeOnce": false,
+      "credentials": {
+        "googleApi": "Google Service"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "SHEET_ID",
+        "range": "Broadcast!A:F",
+        "options": {}
+      },
+      "name": "Set Status: Processing",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        1070,
+        310
+      ],
+      "credentials": {
+        "googleApi": "Google Service"
+      }
+    },
+    {
+      "parameters": {
+        "sheetId": "SHEET_ID",
+        "range": "={{$node[\"Lookup Sheets\"].json[\"To List\"]}}!A:F",
+        "options": {}
+      },
+      "name": "Get List",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        550,
+        570
+      ],
+      "credentials": {
+        "googleApi": "Google Service"
+      }
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "id",
+              "value": "={{$node[\"Lookup Sheets\"].json[\"id\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set3",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        1660,
+        170
+      ],
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "functionCode": "//item.customizedMessage = item.message.replace(\"\", $node[\"Set\"].json[\"Name\"]);\nitem.customizedMessage = item.message.split(\"{{Name}}\").join($node[\"Set\"].json[\"Name\"]);\nreturn item;"
+      },
+      "name": "Customized Message",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        1130,
+        640
+      ]
+    }
+  ],
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Set1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Set3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Sheets": {
+      "main": [
+        [
+          {
+            "node": "Get List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "Lookup Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Sheets1": {
+      "main": [
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Set2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "Customized Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set1": {
+      "main": [
+        [
+          {
+            "node": "Update Status - Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set2": {
+      "main": [
+        [
+          {
+            "node": "Set Status: Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitInBatches": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get List": {
+      "main": [
+        [
+          {
+            "node": "Lookup Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set3": {
+      "main": [
+        [
+          {
+            "node": "Add Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customized Message": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "11"
+}
